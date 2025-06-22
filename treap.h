@@ -84,17 +84,8 @@ public:
         BaseNode* merged_rhs = merge(new_node, rhs);
         sentinel_node.parent = merge(lhs, merged_rhs);
 
-        BaseNode* current = sentinel_node.parent;
-        while (current->left != &sentinel_node) {
-            current = current->left;
-        }
-        sentinel_node.left = current;
-
-        current = sentinel_node.parent;
-        while (current->right != &sentinel_node) {
-            current = current->right;
-        }
-        sentinel_node.right = current;
+        update_leftmost_pointer();
+        update_rightmost_pointer();
 
         return std::make_pair(iterator(new_node, &sentinel_node), true);
     }
@@ -154,6 +145,22 @@ private:
         }
     }
 
+    void update_leftmost_pointer() {
+        BaseNode* new_min = sentinel_node.parent;
+        while (new_min != &sentinel_node && new_min->left != &sentinel_node) {
+            new_min = new_min->left;
+        }
+        sentinel_node.left = new_min;
+    }
+
+    void update_rightmost_pointer() {
+        BaseNode* new_max = sentinel_node.parent;
+        while (new_max != &sentinel_node && new_max->right != &sentinel_node) {
+            new_max = new_max->right;
+        }
+        sentinel_node.right = new_max;
+    }
+
     void erase_node(BaseNode* node) {
         BaseNode* new_subtree = merge(node->left, node->right);
 
@@ -175,19 +182,10 @@ private:
         }
 
         if (sentinel_node.left == node) {
-            BaseNode* new_min = sentinel_node.parent;
-            while (new_min != &sentinel_node && new_min->left != &sentinel_node) {
-                new_min = new_min->left;
-            }
-            sentinel_node.left = new_min;
+            update_leftmost_pointer();
         }
-        
         if (sentinel_node.right == node) {
-            BaseNode* new_max = sentinel_node.parent;
-            while (new_max != &sentinel_node && new_max->right != &sentinel_node) {
-                new_max = new_max->right;
-            }
-            sentinel_node.right = new_max;
+            update_rightmost_pointer();
         }
 
         destroy_node(node->as_derived());
