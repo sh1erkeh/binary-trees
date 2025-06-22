@@ -40,6 +40,8 @@ class Treap : public BinaryTree<T, nodes::TreapNode<T>,
                         std::allocator<T>>;
     using base_type::base_type;
 
+    using base_type::find_helper;
+
     using base_type::sentinel_node;
     using base_type::reset_sentinel;
 
@@ -105,6 +107,16 @@ public:
         return emplace(std::forward<T>(value));
     }
 
+    bool erase(const T& value) {
+        auto [ptr, is_self] = find_helper(value);
+        if (!is_self) {
+            return false;
+        } else {
+            erase_node(ptr);
+            return true;
+        }
+    }
+
 private:
     std::pair<BaseNode*, BaseNode*> split(BaseNode* ptr, const T& key) {
         if (ptr == &sentinel_node) {
@@ -140,5 +152,44 @@ private:
             right_ptr->left->parent = right_ptr;
             return right_ptr;
         }
+    }
+
+    void erase_node(BaseNode* node) {
+        BaseNode* new_subtree = merge(node->left, node->right);
+
+        if (node->parent != &sentinel_node) {
+            if (node->parent->left == node) {
+                node->parent->left = new_subtree;
+            } else {
+                node->parent->right = new_subtree;
+            }
+            
+            if (new_subtree != &sentinel_node) {
+                new_subtree->parent = node->parent;
+            }
+        } else {
+            sentinel_node.parent = new_subtree;
+            if (new_subtree != &sentinel_node) {
+                new_subtree->parent = &sentinel_node;
+            }
+        }
+
+        if (sentinel_node.left == node) {
+            BaseNode* new_min = sentinel_node.parent;
+            while (new_min != &sentinel_node && new_min->left != &sentinel_node) {
+                new_min = new_min->left;
+            }
+            sentinel_node.left = new_min;
+        }
+        
+        if (sentinel_node.right == node) {
+            BaseNode* new_max = sentinel_node.parent;
+            while (new_max != &sentinel_node && new_max->right != &sentinel_node) {
+                new_max = new_max->right;
+            }
+            sentinel_node.right = new_max;
+        }
+
+        destroy_node(node->as_derived());
     }
 };
