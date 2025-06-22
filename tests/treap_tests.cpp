@@ -17,35 +17,38 @@ int main() {
 
     Treap<int> treap;
     for (int i = 1; i < n; i++) {
-        treap.insert(rng());
+        treap.insert(rng() % 100);
     }
 
     std::vector<int> inserted(number_of_tests);
 
     for (int i = 0; i < number_of_tests; i++) {
-        int element = rng();
+        int element = rng() % 100;
 
         timer.start();
         treap.insert(element);
-        timer.stop();
+        std::cout << timer.get_elapsed() << ' ';
 
         inserted[i] = element;
-        std::cout << timer.get_elapsed() << ' ';
     }
+    std::cout << '\n';
 
     for (int i = 0; i < number_of_tests; i++) {
         timer.start();
         treap.find(inserted[i]);
-        timer.stop();
-
         std::cout << timer.get_elapsed() << ' ';
     }
+    std::cout << '\n';
 
     for (int i = 0; i < number_of_tests; i++) {
         timer.start();
         treap.erase(inserted[i]);
-        timer.stop();
-
         std::cout << timer.get_elapsed() << ' ';
     }
+    std::cout << '\n';
+
+    for (auto it = treap.begin(); it != treap.end(); it++) {
+        std::cout << *it << ' ';
+    }
+    std::cout << '\n';
 }
