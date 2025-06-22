@@ -39,8 +39,10 @@ public:
     T value;
 
     template <typename... Args>
-    DefaultNode(base_type* left, base_type* right, base_type* parent, Args&&... args)
-            : BaseNode<base_type>(left, right, parent), value(std::forward<Args>(args)...)
+    DefaultNode(base_type* left, base_type* right,
+                base_type* parent, Args&&... args)
+            : base_type(left, right, parent)
+            , value(std::forward<Args>(args)...)
     {}
 };
 
@@ -51,9 +53,12 @@ template <
     typename NodeType,
     typename Allocator
 > class BinaryTree {
+protected:
     using BaseNode = nodes::BaseNode<NodeType>;
+    using Node = NodeType;
     using node_allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<NodeType>;
 
+private:
     template <bool IsConst>
     class BaseIterator {
     public:
