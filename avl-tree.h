@@ -17,13 +17,13 @@ public:
     using base_type::base_type;
 
     AVLNode(AVLNode<T>* left, AVLNode<T>* right, 
-              AVLNode<T>* parent, const T& value)
-        : base_type(left, right, parent, value)
+            AVLNode<T>* parent, const T& value)
+            : base_type(left, right, parent, value)
     {}
 
-    AVLNode(AVLNode<T>* left, AVLNode<T>* right, 
-              AVLNode<T>* parent, T&& value)
-        : base_type(left, right, parent, std::move(value))
+    AVLNode(AVLNode<T>* left, AVLNode<T>* right,
+            AVLNode<T>* parent, T&& value)
+            : base_type(left, right, parent, std::move(value))
     {}
 };
 
