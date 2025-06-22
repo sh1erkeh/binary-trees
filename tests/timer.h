@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <iostream>
+#include <variant>
 
 class Timer {
     using nothing = std::monostate;
@@ -19,19 +20,16 @@ public:
         state = std::chrono::steady_clock::now();
     }
 
-    void stop() {
-        if (std::holds_alternative<nothing>(state)) {
-            throw std::runtime_error("Timer not started");
-        }
-        state = nothing{};
-    }
-
-    auto get_elapsed() const {
+    auto get_elapsed() {
         if (std::holds_alternative<nothing>(state)) {
             throw std::runtime_error("Timer not running");
         }
-        return std::chrono::duration_cast<std::chrono::milliseconds>(
+
+        auto elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::steady_clock::now() - std::get<time_type>(state)
         ).count();
+
+        state = nothing{};
+        return elapsed_time;
     }
 };
