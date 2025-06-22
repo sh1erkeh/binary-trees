@@ -82,14 +82,17 @@ public:
         BaseNode* merged_rhs = merge(new_node, rhs);
         sentinel_node.parent = merge(lhs, merged_rhs);
 
-        if (sentinel_node.left == &sentinel_node 
-                || new_node->value < sentinel_node.left->as_derived()->value) {
-            sentinel_node.left = new_node;
+        BaseNode* current = sentinel_node.parent;
+        while (current->left != &sentinel_node) {
+            current = current->left;
         }
-        if (sentinel_node.right == &sentinel_node 
-                || new_node->value > sentinel_node.right->as_derived()->value) {
-            sentinel_node.right = new_node;
+        sentinel_node.left = current;
+
+        current = sentinel_node.parent;
+        while (current->right != &sentinel_node) {
+            current = current->right;
         }
+        sentinel_node.right = current;
 
         return std::make_pair(iterator(new_node, &sentinel_node), true);
     }
