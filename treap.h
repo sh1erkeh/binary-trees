@@ -8,7 +8,7 @@
 namespace nodes {
 
 template <typename T>
-class TreapNode : public DefaultNode<T> {
+class TreapNode : public BaseNode<TreapNode<T>> {
 public:
     inline static std::mt19937_64 rng{
         static_cast<unsigned>(
@@ -16,15 +16,17 @@ public:
         )
     };
 
+    T value;
     size_t priority;
 
-    using base_type = DefaultNode<T>;
+    using base_type = BaseNode<TreapNode<T>>;
     using base_type::base_type;
 
     template <typename... Args>
     TreapNode(TreapNode<T>* left, TreapNode<T>* right, 
               TreapNode<T>* parent, Args&&... args)
-            : base_type(left, right, parent, std::forward<Args>(args)...)
+            : base_type(left, right, parent)
+            , value(std::forward<Args>(args)...)
             , priority(rng())
     {}
 };
@@ -33,8 +35,9 @@ public:
 
 template <typename T>
 class Treap : public BinaryTree<T, nodes::TreapNode<T>,
-                        std::allocator<nodes::TreapNode<T>>> {
-    using base_type = BinaryTree<T, nodes::TreapNode<T>, std::allocator<nodes::TreapNode<T>>>;
+                        std::allocator<T>> {
+    using base_type = BinaryTree<T, nodes::TreapNode<T>,
+                        std::allocator<T>>;
     using base_type::base_type;
 
     using base_type::sentinel_node;
@@ -43,7 +46,7 @@ class Treap : public BinaryTree<T, nodes::TreapNode<T>,
     using base_type::create_node;
     using base_type::destroy_node;
 
-    using typename base_type::NodeType;
+    using typename base_type::Node;
 
 public:
     // Basic functions
@@ -65,18 +68,19 @@ public:
     // Modified functions implementation
     template <typename... Args>
     std::pair<iterator, bool> emplace(Args&&... args) {
-        NodeType* new_node = create_node(
+        Node* new_node = create_node(
             &sentinel_node, &sentinel_node, &sentinel_node,
             std::forward<Args>(args)...
         );
         
-        if (find(new_node->value) == end()) {
+        if (find(new_node->value) != end()) {
             destroy_node(new_node);
             return std::make_pair(end(), false);
         }
 
         auto [lhs, rhs] = split(sentinel_node.parent, new_node->value);
-        sentinel_node.parent = merge(lhs, merge(new_node, rhs));
+        BaseNode* merged_rhs = merge(new_node, rhs);
+        sentinel_node.parent = merge(lhs, merged_rhs);
 
         if (sentinel_node.left == &sentinel_node 
                 || new_node->value < sentinel_node.left->as_derived()->value) {
@@ -108,16 +112,10 @@ private:
             if (lhs != &sentinel_node) {
                 lhs->parent = ptr;
             }
-            if (rhs != &sentinel_node) {
-                rhs->parent = &sentinel_node;
-            }
             return std::make_pair(ptr, rhs);
         } else {
             auto [lhs, rhs] = split(ptr->left, key);
             ptr->left = rhs;
-            if (lhs != &sentinel_node) {
-                lhs->parent = &sentinel_node;
-            }
             if (rhs != &sentinel_node) {
                 rhs->parent = ptr;
             }
@@ -130,7 +128,7 @@ private:
             return right_ptr;
         } else if (right_ptr == &sentinel_node) {
             return left_ptr;
-        } else if (left_ptr->as_derived()->priority > right_ptr->as_derived()->prioriity) {
+        } else if (left_ptr->as_derived()->priority > right_ptr->as_derived()->priority) {
             left_ptr->right = merge(left_ptr->right, right_ptr);
             left_ptr->right->parent = left_ptr;
             return left_ptr;
