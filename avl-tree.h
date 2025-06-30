@@ -54,12 +54,14 @@ public:
     // Modified functions
     template <typename... Args>
     std::pair<iterator, bool> emplace(Args&&... args) {
-        auto result = base_type::emplace(std::forward<Args>(args)...);
-        if (result.second) {
-            auto* node = result.first.raw();
-            rebalance(node);
+        auto [ptr, is_successful] =
+            base_type::emplace_helper(std::forward<Args>(args)...);
+        if (is_successful) {
+            rebalance(ptr);
+        } else {
+            return std::make_pair(iterator(ptr), false);
         }
-        return result;
+        return std::make_pair(iterator(ptr), true);
     }
 
     std::pair<iterator, bool> insert(const T& value) {
