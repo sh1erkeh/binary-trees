@@ -203,6 +203,51 @@ public:
         return emplace(std::forward<T>(value));
     }
 
+    bool erase(const T& value) {
+        auto [ptr, is_self] = find_helper(value);
+        if (!is_self) {
+            return false;
+        }
+
+        if (ptr->left == &sentinel_node 
+                && ptr->right == &sentinel_node) {
+            if (ptr->parent == &sentinel_node) {
+                reset_sentinel();
+            } else if (ptr->parent->right == ptr) {
+                ptr->parent->right = &sentinel_node;
+                if (sentinel_node.right == ptr) {
+                    sentinel_node.right = ptr->parent;
+                }
+            } else {
+                ptr->parent->left = &sentinel_node;
+                if (sentinel_node.left == ptr) {
+                    sentinel_node.left = ptr->parent;
+                }
+            }
+            destroy_node(ptr->as_derived());
+        } else if (ptr->left == &sentinel_node
+                || ptr->right == &sentinel_node) {
+            BaseNode* child = (ptr->left != &sentinel_node) ? ptr->left : ptr->right;
+            child->parent = ptr->parent;
+
+            if (ptr->parent == &sentinel_node) {
+                sentinel_node.parent = child;
+            } else if (ptr->parent->left == ptr) {
+                ptr->parent->left = child;
+            } else {
+                ptr->parent->right = child;
+            }
+            destroy_node(ptr->as_derived());        
+        } else {
+            BaseNode* successor = find_next(ptr);
+            T successor_value = std::move(successor->as_derived()->value);
+            erase(successor_value);
+            ptr->as_derived()->value = std::move(successor_value);
+        }
+
+        return true;
+    }
+
     void print_by_layer() const noexcept {
         std::queue<BaseNode*> nodes;
         if (sentinel_node.parent != &sentinel_node) {
