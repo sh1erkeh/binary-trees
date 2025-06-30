@@ -8,4 +8,4 @@
 | -------- | -------                    | -----                    | ----               |
 | Treap    | :heavy_check_mark:         | :heavy_check_mark:       | :heavy_check_mark: |
 | AVL tree | :heavy_check_mark:         |                          | :heavy_check_mark: |
-| Naive    | :heavy_check_mark:         |                          | :heavy_check_mark: |
+| Naive    | :heavy_check_mark:         | :heavy_check_mark:       | :heavy_check_mark: |
