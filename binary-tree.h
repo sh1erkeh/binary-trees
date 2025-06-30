@@ -53,10 +53,14 @@ template <
     typename NodeType,
     typename Allocator
 > class BinaryTree {
+    template <bool>
+    friend class BaseIterator;
+
 protected:
     using BaseNode = nodes::BaseNode<NodeType>;
     using Node = NodeType;
-    using node_allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<NodeType>;
+    using node_allocator = typename
+        std::allocator_traits<Allocator>::template rebind_alloc<NodeType>;
 
 private:
     template <bool IsConst>
@@ -70,8 +74,8 @@ private:
         BaseIterator(const BaseIterator&) = default;
         BaseIterator& operator=(const BaseIterator&) = default;
 
-        BaseIterator(BaseNode* node, BaseNode* sentinel) 
-                : current(node), sentinel(sentinel)
+        BaseIterator(BaseNode* node, const BinaryTree& tree) 
+                : current(node), tree(tree)
         {}
 
         bool operator==(const BaseIterator& other) const noexcept {
@@ -89,7 +93,7 @@ private:
         }
 
         BaseIterator& operator++() {
-            current = find_next(current);
+            current = tree.find_next(current);
             return *this;
         }
 
@@ -102,25 +106,8 @@ private:
         }
 
     private:
-        BaseNode* find_next(BaseNode* node) {
-            if (node->right != sentinel) {
-                node = node->right;
-                while (node->left != sentinel) {
-                    node = node->left;
-                }
-                return node;
-            } else {
-                BaseNode* parent = node->parent;
-                while (parent != sentinel && node == parent->right) {
-                    node = parent;
-                    parent = parent->parent;
-                }
-                return parent;
-            }
-        }
-
+        const BinaryTree& tree;
         BaseNode* current;
-        BaseNode* sentinel;
     };
 
 public:
@@ -169,19 +156,19 @@ public:
     }
 
     iterator end() noexcept { 
-        return iterator(&sentinel_node, &sentinel_node);
+        return iterator(&sentinel_node, *this);
     }
 
     iterator begin() noexcept {
-        return iterator(sentinel_node.left, &sentinel_node);
+        return iterator(sentinel_node.left, *this);
     }
 
     const_iterator end() const noexcept { 
-        return const_iterator(&sentinel_node, &sentinel_node);
+        return const_iterator(&sentinel_node, *this);
     }
 
     const_iterator begin() const noexcept {
-        return const_iterator(sentinel_node.left, &sentinel_node);
+        return const_iterator(sentinel_node.left, *this);
     }
 
     [[nodiscard]] bool empty() const noexcept {
@@ -202,7 +189,7 @@ public:
     std::pair<iterator, bool> emplace(Args&&... args) {
         auto [ptr, is_successful] = emplace_helper(std::forward<Args>(args)...);
         if (is_successful) {
-            return std::make_pair(iterator(ptr, &sentinel_node), true);
+            return std::make_pair(iterator(ptr, *this), true);
         } else {
             return std::make_pair(end(), false);
         }
@@ -292,11 +279,17 @@ protected:
     }
 
     template <typename... Args>
-    NodeType* create_node(BaseNode* left, BaseNode* right, BaseNode* parent, Args&&... args) {
-        NodeType* new_node = std::allocator_traits<node_allocator>::allocate(alloc, 1);
+    NodeType* create_node(BaseNode* left, BaseNode* right,
+                          BaseNode* parent, Args&&... args) {
+        NodeType* new_node =
+            std::allocator_traits<node_allocator>::allocate(alloc, 1);
         try {
             std::allocator_traits<node_allocator>::construct(
-                alloc, new_node, left->as_derived(), right->as_derived(), parent->as_derived(), std::forward<Args>(args)...);
+                alloc, new_node,
+                left->as_derived(),
+                right->as_derived(),
+                parent->as_derived(),
+                std::forward<Args>(args)...);
         } catch (...) {
             std::allocator_traits<node_allocator>::deallocate(alloc, new_node, 1);
             throw std::bad_alloc();
@@ -311,6 +304,24 @@ protected:
             std::terminate();
         }
         std::allocator_traits<node_allocator>::deallocate(alloc, node, 1);
+    }
+
+    BaseNode* find_next(BaseNode* node) const noexcept {
+        if (node->right != &sentinel_node) {
+            node = node->right;
+            while (node->left != &sentinel_node) {
+                node = node->left;
+            }
+            return node;
+        } else {
+            BaseNode* parent = node->parent;
+            while (parent != &sentinel_node
+                    && node == parent->right) {
+                node = parent;
+                parent = parent->parent;
+            }
+            return parent;
+        }
     }
 
     void clear() noexcept {
@@ -343,5 +354,3 @@ protected:
     }
 };
 
-template <typename T, typename Allocator = std::allocator<T>>
-using BasicBinaryTree = BinaryTree<T, nodes::DefaultNode<T>, Allocator>;
